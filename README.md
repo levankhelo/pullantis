@@ -42,6 +42,10 @@ Event Triggers:  `Let me select individual events.`
   
 Click `Add Webhook` and that's it!
 
+## Create GitHub Access Token
+Create [https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token](Access Token) and name it pullantis
+> now we have `git-token`
+
 
  ## Retrieve Pulumi Access Token
 

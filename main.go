@@ -2,6 +2,8 @@ package main
 
 // import libraries
 import (
+
+	// njson "github.com/m7shapan/njson"
 	"encoding/json"
 	flag "flag"
 	f "fmt"
@@ -9,8 +11,11 @@ import (
 	"net/http"
 )
 
-func CheckOpen() {
-
+type webhook struct {
+	Action      string
+	PullRequest struct {
+		ref string
+	}
 }
 
 // webhook handler
@@ -18,20 +23,20 @@ func CheckOpen() {
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	f.Println("HookHandler: Data received")
 	// fmt.Printf("headers: %v\n", r.Header)
-	webhookData := make(map[string]interface{})
+	// webhookData := make(map[string]interface{})
+	var webhookData webhook
 
 	err := json.NewDecoder(r.Body).Decode(&webhookData)
-
 	if err != nil {
+		f.Print("Error")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	f.Println("got webhook payload: ")
-
-	switch action := webhookData["action"]; action {
+	f.Fprintf(w, "webhook: %+v", webhookData)
+	switch action := webhookData.Action; action {
 	case "opened":
-
+		f.Print(webhookData.PullRequest.ref)
 	default:
 		f.Print("closed")
 	}
@@ -42,27 +47,44 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// }
 }
 
+func argPassed(arg string) bool {
+	var received bool = false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == arg {
+			received = true
+		}
+	})
+	return received
+}
+
 func main() {
 
 	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for setup information")
 
 	// Arguments
-	var userGit = flag.String("git-user", "", "GitHub username")
+	var targetRepo = flag.String("repo", "", "GitHub repository name")
+	var userGit = flag.String("git-user", "", "GitHub Token")
 	var tokenGit = flag.String("git-token", "", "GitHub Token")
-	var userPulumi = flag.String("pulumi-user", "", "Pulumi username")
 	var tokenPulumi = flag.String("pulumi-token", "", "Pulumi Token")
 	var webhookGit = flag.String("webhook", "/events", "GitHub webhook tag")
 	var localPort = flag.String("port", "4141", "local port for listener")
+	var allowServer = flag.Bool("server", true, "allow server listener")
 
 	// Parse Arguments
 	flag.Parse()
 
-	f.Println("----GIT----\n|\t", "User:", *userGit, "\n|\tToken:", *tokenGit)
-	f.Println("---PULUMI--\n|\t", "User:", *userPulumi, "\n|\tToken:", *tokenPulumi)
+	f.Println("----GIT----\n|\t", "\n|\tUser:", *userGit, "\n|\tToken:", *tokenGit, "\n|\tRepo:", *targetRepo)
+	f.Println("---PULUMI--\n|\t", "\n|\tToken:", *tokenPulumi)
 	f.Println("--WEBHOOK--\n|\t", "Hook:", *webhookGit, "\n|\tPort:", *localPort)
 
-	log.Println("server started")
-	http.HandleFunc(*webhookGit, handleWebhook)
-	log.Fatal(http.ListenAndServe(":"+(*localPort), nil))
+	if !argPassed(*tokenGit) {
+		f.Print("COOL")
+	}
+
+	if *allowServer {
+		log.Println("server started")
+		http.HandleFunc(*webhookGit, handleWebhook)
+		log.Fatal(http.ListenAndServe(":"+(*localPort), nil))
+	}
 
 }
