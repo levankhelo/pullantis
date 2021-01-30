@@ -16,7 +16,7 @@ install `ngrok` using package manager
 ```
 ngrok http 4141
 ```
-**save your <mark>ngrok's forwarded address</mark>**
+**save your ngrok's forwarded address**
 
 <br> 
 <hr> 
@@ -47,7 +47,7 @@ Click `Add Webhook` and that's it!
 
  Visit [Pulumi](https://app.pulumi.com/) and go in `user` > `settings` > `Access Tokens`  
  Click `NEW ACCESS TOKEN` and input `pullantis` in description! 
- Now we have <mark>pulumi_token</mark>
+ > Now we have `pulumi_token`
 
 
 
