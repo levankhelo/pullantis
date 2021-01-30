@@ -6,12 +6,8 @@ import (
 	f "fmt"
 )
 
-type TEXT struct {
-	link string
-}
-
 func instructions() {
-	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for more information")
+	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for setup information")
 }
 
 func main() {
