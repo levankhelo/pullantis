@@ -4,37 +4,41 @@ package main
 import (
 	flag "flag"
 	f "fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
 )
 
-func instructions() {
-	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for setup information")
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+	// taken from https://groob.io/tutorial/go-github-webhook/
+	f.Printf("headers: %v\n", r.Header)
+
+	_, err := io.Copy(os.Stdout, r.Body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 func main() {
 
-	f.Println()
-
-	instructions()
+	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for setup information")
 
 	// Arguments
-	var user_git = flag.String("git-user", "", "GitHub username")
-	var token_git = flag.String("git-token", "", "GitHub Token")
-	var user_pulumi = flag.String("pulumi-user", "", "Pulumi username")
-	var token_pulumi = flag.String("pulumi-token", "", "Pulumi Token")
+	var userGit = flag.String("git-user", "", "GitHub username")
+	var tokenGit = flag.String("git-token", "", "GitHub Token")
+	var userPulumi = flag.String("pulumi-user", "", "Pulumi username")
+	var tokenPulumi = flag.String("pulumi-token", "", "Pulumi Token")
+	var webhookGit = flag.String("webhook", "/events", "GitHub webhook tag")
 
 	// Parse Arguments
 	flag.Parse()
 
-	f.Println("----GIT----\n", "user: ", *user_git, "\nToken: ", *token_git)
-	f.Println("----PUL----\n", "user: ", *user_pulumi, "\nToken: ", *token_pulumi)
+	f.Println("----GIT----\n", "user: ", *userGit, "\nToken: ", *tokenGit)
+	f.Println("---PULUMI--\n", "user: ", *userPulumi, "\nToken: ", *tokenPulumi)
+	f.Println("--WEBHOOK--\n", "hook: ", *webhookGit)
 
-	// os.Setenv()
+	http.HandleFunc(*webhookGit, handleWebhook)
 
-	// pulumi.Run(func(ctx *pulumi.Context) error {
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	return nil
-	// })
 }
