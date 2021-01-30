@@ -2,15 +2,21 @@
 
 # pullantis
 
+## Install pulumi
+install `pulumi` using package manager 
+- linux: `apt-get install pulumi` 
+- Mac OS: `brew install pulumi` 
+
+Now we need to create directory and 
 
 ## Start ngrok
-install `ngrok` from package manager 
+install `ngrok` using package manager 
 - linux: `apt-get install ngrok` 
-- Mac: `brew install ngrok` 
+- Mac OS: `brew install ngrok` 
 ```
 ngrok http 4141
 ```
-**save your ngrok's forwarded address**
+**save your <mark>ngrok's forwarded address</mark>**
 
 <br> 
 <hr> 
@@ -25,6 +31,8 @@ Payload URL:  `https://MYADRESS.ngrok.io/events` where `MYADRESS` is your Ngrok'
 
 Content Type: `application/json`  
 
+Secret: Any Secret text
+
 Event Triggers:  `Let me select individual events.`  
 
 - `Commit comments` 
@@ -32,10 +40,15 @@ Event Triggers:  `Let me select individual events.`
 - `Pull request reviews`
 - `Pushes` 
   
- 
+Click `Add Webhook` and that's it!
+
+
  ## Retrieve Pulumi Access Token
 
- go 
+ Visit [Pulumi](https://app.pulumi.com/) and go in `user` > `settings` > `Access Tokens`  
+ Click `NEW ACCESS TOKEN` and input `pullantis` in description! 
+ > Now we have <mark>pulumi_token</mark>
+
 
 
 <hr> 
