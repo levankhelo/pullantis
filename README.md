@@ -47,7 +47,7 @@ Click `Add Webhook` and that's it!
 
  Visit [Pulumi](https://app.pulumi.com/) and go in `user` > `settings` > `Access Tokens`  
  Click `NEW ACCESS TOKEN` and input `pullantis` in description! 
- > Now we have <mark>pulumi_token</mark>
+ Now we have <mark>pulumi_token</mark>
 
 
 
