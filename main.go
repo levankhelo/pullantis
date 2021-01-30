@@ -7,12 +7,18 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	f "fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/google/go-github/v33/github"
 	"golang.org/x/oauth2"
+	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/storage/memory"
 )
 
 // webhook handler
@@ -34,6 +40,18 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	f.Println(gitBranchName)
 
+}
+
+func SetupCloseHandler() {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		os.RemoveAll("./tmp/")
+		f.Println("Exited")
+		os.Exit(0)
+	}()
 }
 
 func main() {
@@ -73,11 +91,29 @@ func main() {
 	var repo github.Repository
 	for i := 0; i < len(repos); i++ {
 		f.Println(*repos[i].Name)
-		if repos[i].Name == targetRepo {
+		if *repos[i].Name == *targetRepo {
 			repo = *repos[i]
 		}
 	}
-	f.Printf("%v\n", &repo.Name)
+	// f.Printf("%v\n", repo)
+
+	SetupCloseHandler()
+
+	os.Mkdir("tmp/", 0700)
+
+	os.Chdir("tmp/")
+
+	newRepo, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
+		URL: *repo.HTMLURL,
+	})
+
+	f.Printf("NEW REPO: %v\n", *newRepo)
+
+	// newRepo.Pull(&git.PullOptions{
+	// 	RemoteName: "origin",
+	// })
+
+	os.Chdir("../")
 
 	if *allowServer {
 		log.Println("server started")
