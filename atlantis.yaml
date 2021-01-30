@@ -1,4 +1,0 @@
-version: 3
-projects:
-- dir: .
-  terraform_version: v0.14.5
