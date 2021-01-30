@@ -9,4 +9,5 @@ require (
 	github.com/pulumi/pulumi/sdk v1.14.1
 	github.com/pulumi/pulumi/sdk/v2 v2.19.0
 	golang.org/x/tools v0.1.0 // indirect
+	gopkg.in/rjz/githubhook.v0 v0.0.1 // indirect
 )

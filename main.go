@@ -19,6 +19,10 @@ type webhook struct {
 	}
 }
 
+func getAction(w http.ResponseWriter) {
+
+}
+
 // webhook handler
 // referrenced to https://groob.io/tutorial/go-github-webhook/
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
