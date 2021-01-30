@@ -6,9 +6,19 @@ import (
 	f "fmt"
 )
 
+type TEXT struct {
+	link string
+}
+
+func instructions() {
+	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for more information")
+}
+
 func main() {
 
-	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for more information")
+	f.Println()
+
+	instructions()
 
 	// Arguments
 	var user_git = flag.String("git-user", "", "GitHub username")
