@@ -9,6 +9,7 @@ import (
 	f "fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
 )
 
 type webhook struct {
@@ -22,28 +23,37 @@ type webhook struct {
 // referrenced to https://groob.io/tutorial/go-github-webhook/
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	f.Println("HookHandler: Data received")
-	// fmt.Printf("headers: %v\n", r.Header)
-	// webhookData := make(map[string]interface{})
-	var webhookData webhook
+	f.Printf("headers: %v\n", r.Header)
+	f.Printf("git event: %v\n", r.Header.Get("X-Github-Event"))
+	webhookData := make(map[string]interface{})
+	// var webhookData webhook
 
 	err := json.NewDecoder(r.Body).Decode(&webhookData)
 	if err != nil {
-		f.Print("Error")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	f.Fprintf(w, "webhook: %+v", webhookData)
-	switch action := webhookData.Action; action {
-	case "opened":
-		f.Print(webhookData.PullRequest.ref)
-	default:
-		f.Print("closed")
+	requestDump, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		f.Println(err)
 	}
+	f.Println(string(requestDump))
 
-	// for k := range webhookData {
-	// f.Println("\n\n", k)
-	// f.Printf("\n----------------------------\n\n\n%s : %v\n\n\n----------------------------\n\n\n", k, v)
+	// f.Fprintf(w, "webhook: %+v", webhookData)
+	// switch action := webhookData.Action; action {
+	// case "opened":
+	// 	f.Print(webhookData.PullRequest.ref)
+	// default:
+	// 	f.Print("closed")
+	// }
+
+	// for v, k := range webhookData {
+	// 	if v == "pull_request" {
+	// 		// f.Print(k)
+	// 		// f.Printf("%T", k)
+	// 	}
+	// 	// f.Println("\n\n", v, k)
 	// }
 }
 
