@@ -2,22 +2,27 @@ package main
 
 // import libraries
 import (
+	"encoding/json"
 	flag "flag"
 	f "fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
 )
 
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
-	// taken from https://groob.io/tutorial/go-github-webhook/
-	f.Printf("headers: %v\n", r.Header)
+	f.Println("HELLO")
+	webhookData := make(map[string]interface{})
 
-	_, err := io.Copy(os.Stdout, r.Body)
+	err := json.NewDecoder(r.Body).Decode(&webhookData)
+
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	f.Println("got webhook payload: ")
+	for k, v := range webhookData {
+		f.Printf("%s : %v\n", k, v)
 	}
 }
 
@@ -31,14 +36,18 @@ func main() {
 	var userPulumi = flag.String("pulumi-user", "", "Pulumi username")
 	var tokenPulumi = flag.String("pulumi-token", "", "Pulumi Token")
 	var webhookGit = flag.String("webhook", "/events", "GitHub webhook tag")
+	var localPort = flag.String("port", "4141", "local port for listener")
 
 	// Parse Arguments
 	flag.Parse()
 
 	f.Println("----GIT----\n", "user: ", *userGit, "\nToken: ", *tokenGit)
 	f.Println("---PULUMI--\n", "user: ", *userPulumi, "\nToken: ", *tokenPulumi)
-	f.Println("--WEBHOOK--\n", "hook: ", *webhookGit)
+	f.Println("--WEBHOOK--\n", "hook: ", *webhookGit, "\nport: ", *localPort)
+	f.Println("\n---\n---\n")
+	f.Printf("%#v\n", *localPort)
 
 	http.HandleFunc(*webhookGit, handleWebhook)
+	log.Fatal(http.ListenAndServe(*localPort, nil))
 
 }

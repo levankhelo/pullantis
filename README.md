@@ -46,7 +46,7 @@ Click `Add Webhook` and that's it!
  ## Retrieve Pulumi Access Token
 
  Visit [Pulumi](https://app.pulumi.com/) and go in `user` > `settings` > `Access Tokens`  
- Click `NEW ACCESS TOKEN` and input `pullantis` in description! 
+ Click `NEW ACCESS TOKEN` and input `pullantis` in description!   
  > Now we have `pulumi_token`
 
 
