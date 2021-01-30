@@ -6,7 +6,7 @@ import (
 	// njson "github.com/m7shapan/njson"
 	"context"
 	"encoding/json"
-	flag "flag"
+	"flag"
 	f "fmt"
 	"log"
 	"net/http"
@@ -41,7 +41,7 @@ func main() {
 	f.Println("Visit https://github.com/levankhelo/pullantis/blob/master/README.md for setup information")
 
 	// Arguments
-	var targetRepo = flag.String("repo", "", "GitHub repository name")
+	var targetRepo = flag.String("repo", "pullantis", "GitHub repository name")
 	var userGit = flag.String("git-user", "levankhelo", "GitHub Token")
 	var tokenGit = flag.String("git-token", "", "GitHub Token")
 	var tokenPulumi = flag.String("pulumi-token", "", "Pulumi Token")
@@ -62,15 +62,22 @@ func main() {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	client := github.NewClient(tc)
+	gitClient := github.NewClient(tc)
 
 	// list all repositories for the authenticated user
-	repos, _, err := client.Repositories.List(ctx, "", nil)
+	repos, _, err := gitClient.Repositories.List(ctx, "", nil)
 	if err != nil {
 		f.Println("Could not authenticate git")
 		return
 	}
-	f.Printf("%v", repos)
+	var repo github.Repository
+	for i := 0; i < len(repos); i++ {
+		f.Println(*repos[i].Name)
+		if repos[i].Name == targetRepo {
+			repo = *repos[i]
+		}
+	}
+	f.Printf("%v\n", &repo.Name)
 
 	if *allowServer {
 		log.Println("server started")
