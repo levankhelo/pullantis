@@ -40,7 +40,6 @@ import (
 	"syscall"
 
 	github "github.com/google/go-github/v33/github"
-	"github.com/pulumi/pulumi/sdk/go/pulumi"
 	"golang.org/x/oauth2"
 )
 
@@ -237,6 +236,8 @@ func goGetGitRepo(ctx context.Context, gitClient *github.Client, targetRepo stri
 
 func commentOnReview(GL GitPL, message string) {
 	// TODO: comment on github
+	f.Printf("\n\n----COMMENT: %v", GL)
+	f.Printf("\n------MESSAGE: %v", message)
 }
 
 func findCommandInComment(PL GitPL) {
@@ -244,38 +245,42 @@ func findCommandInComment(PL GitPL) {
 		f.Println("found pullantis apply in comment - running apply")
 		PL.command = "apply"
 		f.Printf("%v", PL)
-		queue.push(PL)
-		// TODO: run pulumi "apply"
+		queue = queue.push(PL)
+		runApplication(PL)
 	} else if strings.Contains(PL.comment.body, "pullantis plan") {
 		f.Println("found pullantis apply in comment - running plan")
-		// TODO: run pulumi "plan"
+		pulumiPlan(PL)
 	}
 }
 
 func pulumiPlan(PL GitPL) {
+	f.Println("Pulumi plan")
 	os.Chdir("tmp/" + PL.project)
 
-	pulumi.Run(func(ctx *pulumi.Context) error {
-		return nil
-	})
-
+	// cmd := exec.Command("pulumi", "refresh", "-y")
+	// cmd.Run()
+	out := exec.Command("pulumi", "refresh", "-y").Run()
+	f.Printf("%v", out)
+	f.Printf("Pulumi apply executed")
+	f.Printf("Pulumi refresh executed")
 	os.Chdir("../../")
 
 }
 
 func pulumiApply(PL GitPL) {
+	f.Println("Pulumi apply")
 	os.Chdir("tmp/" + PL.project)
 
-	pulumi.Run(func(ctx *pulumi.Context) error {
-		return nil
-	})
-
+	// cmd := exec.Command("pulumi", "up", "-y")
+	// cmd.Run()
+	out := exec.Command("pulumi", "up", "-y").Run()
+	f.Printf("%v", out)
+	f.Printf("Pulumi apply executed")
 	os.Chdir("../../")
 
 }
 
 func scanPL(PL GitPL) {
-	goGitCheckout(PL)
 	if PL.command == "apply" {
 		pulumiApply(PL)
 	} else {
@@ -285,14 +290,13 @@ func scanPL(PL GitPL) {
 }
 
 func runApplication(PL GitPL) {
-	// TODO: implement waiting system
-	// TODO: implement pulumi
 	// TODO: comment on github
 	if queue.list[0].running != true {
 		if queue.list[0].running != true {
 			queue.list[0].running = true
 			f.Printf("RUNNING %v", queue.list[0])
-			// go scanPL(queue.list[0])
+			goGitCheckout(PL)
+			go scanPL(queue.list[0])
 		}
 	} else {
 		commentOnReview(PL, "Pullantis is Busy")
@@ -308,19 +312,22 @@ func handleQueue(PL GitPL) {
 	f.Println(PL.action)
 	if PL.action == "opened" {
 		f.Println("Received new PL - Adding to Queue")
-		queue.push(PL)
+		queue = queue.push(PL)
 	} else if PL.action == "created" {
 		f.Println("Received new comment - searching")
 		findCommandInComment(PL)
 	} else if PL.action == "closed" {
 		f.Println("Received PL close - removing from queue")
 		if queue.length != 0 {
-			queue.removeByID(PL.ID)
+			queue = queue.removeByID(PL.ID)
 		}
-	} else {
+	}
+
+	if queue.length+len(queue.list) == 0 {
 		return
 	}
 	runApplication(PL)
+
 }
 
 // referrence - https://groob.io/tutorial/go-github-webhook/
@@ -387,6 +394,10 @@ func main() {
 	os.Chdir("tmp/")
 	goCloneGitRepo(*tokenGit, &repo)
 	os.Chdir("../")
+
+	// handle pulumi login
+	os.Setenv("PULUMI_ACCESS_TOKEN", *tokenPulumi)
+	exec.Command("pulumi", "login").Run()
 
 	if *noServer != true {
 		log.Println("server started")
