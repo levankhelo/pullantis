@@ -84,7 +84,7 @@ func (q Queue) pop() (qu Queue) {
 	if q.length > 1 {
 		q.list = q.list[1:]
 	} else {
-		q.list = make([]GitPL, 0)
+		q.list = make([]GitPL, 0, 100)
 	}
 	q.length--
 	q.disp()
@@ -98,7 +98,7 @@ func (q Queue) remove(index int) (qu Queue) {
 	}
 
 	oldList := q.list
-	q.list = make([]GitPL, 0)
+	q.list = make([]GitPL, 0, 100)
 	for i := 0; i < q.length; i++ {
 		if i == index {
 			q.length--
@@ -112,7 +112,7 @@ func (q Queue) remove(index int) (qu Queue) {
 func (q Queue) removeByID(ID int) (qu Queue) {
 	// run throught elements and find mathcing ID
 	oldList := q.list
-	q.list = make([]GitPL, 0)
+	q.list = make([]GitPL, 0, 100)
 	for i := 0; i < q.length; i++ {
 		if oldList[i].ID == ID {
 			q.length--
@@ -126,7 +126,7 @@ func (q Queue) removeByID(ID int) (qu Queue) {
 func (q Queue) removeByObject(obj GitPL) (qu Queue) {
 	// run throught elements and find mathcing ID
 	oldList := q.list
-	q.list = make([]GitPL, 0)
+	q.list = make([]GitPL, 0, 100)
 	for i := 0; i < q.length; i++ {
 		if oldList[i] == obj {
 			q.length--
@@ -141,6 +141,7 @@ func (q Queue) disp() {
 	f.Printf("Queue: %v\n", q)
 }
 func (q Queue) getByID(ID int) GitPL {
+	q.disp()
 	// run and return element by mathcing ID
 	for i := 0; i < q.length; i++ {
 		if q.list[i].ID == ID {
@@ -290,7 +291,8 @@ func runApplication(PL GitPL) {
 	if queue.list[0].running != true {
 		if queue.list[0].running != true {
 			queue.list[0].running = true
-			go scanPL(queue.list[0])
+			f.Printf("RUNNING %v", queue.list[0])
+			// go scanPL(queue.list[0])
 		}
 	} else {
 		commentOnReview(PL, "Pullantis is Busy")
@@ -311,7 +313,10 @@ func handleQueue(PL GitPL) {
 		findCommandInComment(PL)
 	} else if PL.action == "closed" {
 		f.Println("Received PL close - removing from queue")
-		queue.removeByID(PL.ID)
+		if queue.length != 0 {
+			queue.removeByID(PL.ID)
+		}
+
 	}
 	runApplication(PL)
 }
@@ -319,12 +324,14 @@ func handleQueue(PL GitPL) {
 // referrence - https://groob.io/tutorial/go-github-webhook/
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	f.Println("Data received from GitHub WebHook") // f.Printf("headers: %v\n", r.Header)
+
 	webhookData := make(map[string]interface{})
 
 	err := json.NewDecoder(r.Body).Decode(&webhookData)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		f.Printf("error: %v", err)
+		// http.Error(w, err.Error(), http.StatusInternalServerError)
+		// return
 	}
 
 	if webhookData["action"] == nil {
@@ -354,7 +361,7 @@ func main() {
 	// Arguments
 	var targetRepo = flag.String("repo", "pullantis", "GitHub repository name")
 	var userGit = flag.String("git-user", "levankhelo", "GitHub Token")
-	var tokenGit = flag.String("git-token", "", "GitHub Token")
+	var tokenGit = flag.String("git-token", "50119e57172a6201b5c2255e6cf3a25a69cf9768", "GitHub Token")
 	var tokenPulumi = flag.String("pulumi-token", "", "Pulumi Token")
 	var webhookGit = flag.String("webhook", "/events", "GitHub webhook tag")
 	var localPort = flag.String("port", "4141", "local port for listener")
@@ -364,9 +371,9 @@ func main() {
 	flag.Parse()
 
 	// display arg values
-	f.Println("----GIT----\n|\t", "\n|\tUser:", *userGit, "\n|\tToken:", *tokenGit, "\n|\tRepo:", *targetRepo)
-	f.Println("---PULUMI--\n|\t", "\n|\tToken:", *tokenPulumi)
-	f.Println("--WEBHOOK--\n|\t", "Hook:", *webhookGit, "\n|\tPort:", *localPort)
+	f.Println("----GIT----", "\n|\tUser:", *userGit, "\n|\tToken:", *tokenGit, "\n|\tRepo:", *targetRepo)
+	f.Println("---PULUMI--", "\n|\tToken:", *tokenPulumi)
+	f.Println("--WEBHOOK--", "\n|\tHook:", *webhookGit, "\n|\tPort:", *localPort)
 
 	// init git user using Access Token
 	gitClient, ctx := goGitLogin(*tokenGit)
