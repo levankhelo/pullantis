@@ -361,7 +361,7 @@ func main() {
 	// Arguments
 	var targetRepo = flag.String("repo", "pullantis", "GitHub repository name")
 	var userGit = flag.String("git-user", "levankhelo", "GitHub Token")
-	var tokenGit = flag.String("git-token", "50119e57172a6201b5c2255e6cf3a25a69cf9768", "GitHub Token")
+	var tokenGit = flag.String("git-token", "", "GitHub Token")
 	var tokenPulumi = flag.String("pulumi-token", "", "Pulumi Token")
 	var webhookGit = flag.String("webhook", "/events", "GitHub webhook tag")
 	var localPort = flag.String("port", "4141", "local port for listener")
