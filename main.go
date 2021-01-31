@@ -46,9 +46,9 @@ import (
 
 // GitPL is Pull request structure
 type GitPL struct {
-	project string
-	branch  string // branch name -
-	action  string // action done: comment pull request close -> created
+	project string // project name
+	branch  string // branch name
+	action  string // action done: comment pull request close -> opened=new PL, created=new Review, closed=closed PL
 	ID      int    // ID of pull request -> pull_request.number
 }
 
