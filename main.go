@@ -1,3 +1,28 @@
+/*
+
+	initialize git things - (token, repo)
+	initialize pulumi things - (token)
+
+	start server to listen to github webhooks
+	if webhook is received execute handler
+		if webhook is PullRquest Created than push Queue
+		if webhook is PullRequest Deleted/Resolved than pop Queue
+		if webhook is comment created and comment content = pullantis plan than push Queue
+
+	in Queue
+		if queue is empty and new element is pushed than do Action
+		if queue is not empty, wait for next event and check again
+		if something got deleted, execute Action on next element
+
+	in Action
+		check out on PR branch
+		run pullantis
+		comment results on PL review
+
+
+
+*/
+
 package main
 
 // import libraries
@@ -19,32 +44,90 @@ import (
 
 //// STRUCTURES
 
+// GitPL is Pull request structure
+type GitPL struct {
+	project string
+	branch  string // branch name -
+	action  string // action done: comment pull request close -> created
+	ID      int    // ID of pull request -> pull_request.number
+}
+
 // Queue primitive data structure
 type Queue struct {
-	list   []interface{}
+	list   []GitPL
 	length int
 }
 
-func (q Queue) push(el interface{}) (qu Queue) {
+func (q Queue) push(el GitPL) (qu Queue) {
+	// push element at bottom of array
 	q.list = append(q.list, el)
 	q.length++
 	q.disp()
 	return q
 }
 func (q Queue) pop() (qu Queue) {
-
+	// pop first element of array
 	if q.length > 1 {
 		q.list = q.list[1:]
 	} else {
-		q.list = make([]interface{}, 0)
+		q.list = make([]GitPL, 0)
 	}
 	q.length--
+	q.disp()
+	return q
+}
+func (q Queue) remove(index int) (qu Queue) {
+	// rewrite elements by skipping indexed elements
+	if q.length <= index {
+		f.Println("queue.remove ", index, "out of range")
+		return
+	}
+
+	oldList := q.list
+	q.list = make([]GitPL, 0)
+	for i := 0; i < q.length; i++ {
+		if i == index {
+			q.length--
+			continue
+		}
+		q.list = append(q.list, oldList[i])
+	}
+	q.disp()
+	return q
+}
+func (q Queue) removeByID(ID int) (qu Queue) {
+	// run throught elements and find mathcing ID
+	oldList := q.list
+	q.list = make([]GitPL, 0)
+	for i := 0; i < q.length; i++ {
+		if oldList[i].ID == ID {
+			q.length--
+			continue
+		}
+		q.list = append(q.list, oldList[i])
+	}
+	q.disp()
+	return q
+}
+func (q Queue) removeByObject(obj GitPL) (qu Queue) {
+	// run throught elements and find mathcing ID
+	oldList := q.list
+	q.list = make([]GitPL, 0)
+	for i := 0; i < q.length; i++ {
+		if oldList[i] == obj {
+			q.length--
+			continue
+		}
+		q.list = append(q.list, oldList[i])
+	}
 	q.disp()
 	return q
 }
 func (q Queue) disp() {
 	f.Printf("Queue: %v\n", q)
 }
+
+var queue Queue
 
 //// FUNCTIONS
 
@@ -129,40 +212,27 @@ func goGetGitRepo(ctx context.Context, gitClient *github.Client, targetRepo stri
 	return repo
 }
 
-func runPulumiPlan(project string) {
-	os.Chdir("tmp/" + project)
-}
-
-var queue Queue
-
-// pull request structure
-type GitPL struct {
-	project string
-	branch  string // branch name -
-	action  string // action done: comment pull request close
-	ID      int    // ID of pull request -> pull_request.number
+func runPulumiPlan(PL GitPL) {
+	os.Chdir("tmp/" + PL.project)
 }
 
 func commentOnReview() {
 
 }
 
-func handleQueue(branch string, project string) {
+func handleQueue(PL GitPL) {
 	if queue.length == 0 {
-		goGitCheckout(branch, project)
-		runPulumiPlan(project)
+		goGitCheckout(PL.branch, PL.project)
+		runPulumiPlan(PL)
 		return
 	}
 	f.Println("NOPE")
-	queue = queue.push(branch)
+	queue = queue.push(PL)
 }
 
 // referrence - https://groob.io/tutorial/go-github-webhook/
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
-	// f.Printf("\n\nreceived %v\n\n", m)
-	f.Println("HookHandler: Data received")
-	// f.Printf("headers: %v\n", r.Header)
-	f.Printf("git event: %v\n", r.Header.Get("X-Github-Event"))
+	f.Println("Data received from GitHub WebHook") // f.Printf("headers: %v\n", r.Header)
 	webhookData := make(map[string]interface{})
 
 	err := json.NewDecoder(r.Body).Decode(&webhookData)
@@ -171,12 +241,20 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var gitProjectName string = webhookData["pull_request"].(map[string]interface{})["head"].(map[string]interface{})["repo"].(map[string]interface{})["name"].(string)
-	var gitBranchName string = webhookData["pull_request"].(map[string]interface{})["head"].(map[string]interface{})["ref"].(string)
+	if webhookData["action"] == nil {
+		f.Println("No action found")
+		return
+	}
 
-	handleQueue(gitBranchName, gitProjectName)
+	var PL GitPL
+	PL.ID = webhookData["number"].(int)
+	PL.action = webhookData["action"].(string)
+	PL.branch = webhookData["pull_request"].(map[string]interface{})["head"].(map[string]interface{})["ref"].(string)
+	PL.project = webhookData["pull_request"].(map[string]interface{})["head"].(map[string]interface{})["repo"].(map[string]interface{})["name"].(string)
 
-	f.Println(gitBranchName)
+	handleQueue(PL)
+
+	f.Printf("%v", PL)
 }
 
 func main() {
