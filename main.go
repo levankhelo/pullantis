@@ -390,5 +390,3 @@ func main() {
 	}
 
 }
-
-// clear; go build && go run main.go --git-user levankhelo --repo pullantis --webhook "/events" --port "4141"  --git-token 2868815ba4e32cb656ea9a8abd517a7b96ca2e2f --repo pullantis --pulumi-token "pul-6bc5c2d90a33078b307fd898d12683d70a26ca49"
