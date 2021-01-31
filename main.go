@@ -305,7 +305,8 @@ func handleQueue(PL GitPL) {
 	// if PL is created or pullantis is requested by comment, add element in queue.
 	// 	if PL is closed, remove associated Queue element
 	// run application after each receive to see if we can change anything
-	if PL.action == "open" {
+	f.Println(PL.action)
+	if PL.action == "opened" {
 		f.Println("Received new PL - Adding to Queue")
 		queue.push(PL)
 	} else if PL.action == "created" {
@@ -316,7 +317,8 @@ func handleQueue(PL GitPL) {
 		if queue.length != 0 {
 			queue.removeByID(PL.ID)
 		}
-
+	} else {
+		return
 	}
 	runApplication(PL)
 }
@@ -325,13 +327,12 @@ func handleQueue(PL GitPL) {
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	f.Println("Data received from GitHub WebHook") // f.Printf("headers: %v\n", r.Header)
 
-	webhookData := make(map[string]interface{})
+	webhookData := make(map[string]interface{}, 10000)
 
 	err := json.NewDecoder(r.Body).Decode(&webhookData)
 	if err != nil {
-		f.Printf("error: %v", err)
-		// http.Error(w, err.Error(), http.StatusInternalServerError)
-		// return
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if webhookData["action"] == nil {
