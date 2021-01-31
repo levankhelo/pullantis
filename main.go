@@ -36,20 +36,34 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	github "github.com/google/go-github/v33/github"
+	"github.com/pulumi/pulumi/sdk/go/pulumi"
 	"golang.org/x/oauth2"
 )
 
+/// GLOBAL VARIABLES
+var gitClient *github.Client
+
 //// STRUCTURES
+
+// GitComment is Review Comment on PL
+type GitComment struct {
+	body string
+}
 
 // GitPL is Pull request structure
 type GitPL struct {
-	project string // project name
-	branch  string // branch name
-	action  string // action done: comment pull request close -> opened=new PL, created=new Review, closed=closed PL
-	ID      int    // ID of pull request -> pull_request.number
+	project string     // project name
+	branch  string     // branch name
+	action  string     // action done: comment pull request close -> opened=new PL, created=new Review, closed=closed PL
+	ID      int        // ID of pull request -> pull_request.number
+	commit  string     // commit body
+	comment GitComment // commit body
+	running bool       //  queue mechanism - running or not
+	command string     // apply or plan
 }
 
 // Queue primitive data structure
@@ -79,7 +93,7 @@ func (q Queue) pop() (qu Queue) {
 func (q Queue) remove(index int) (qu Queue) {
 	// rewrite elements by skipping indexed elements
 	if q.length <= index {
-		f.Println("queue.remove ", index, "out of range")
+		f.Println("queue.remove ", index, "out of range. length:", q.length, len(q.list))
 		return
 	}
 
@@ -126,6 +140,19 @@ func (q Queue) removeByObject(obj GitPL) (qu Queue) {
 func (q Queue) disp() {
 	f.Printf("Queue: %v\n", q)
 }
+func (q Queue) getByID(ID int) GitPL {
+	// run and return element by mathcing ID
+	for i := 0; i < q.length; i++ {
+		if q.list[i].ID == ID {
+			return q.list[i]
+		}
+	}
+	return GitPL{}
+}
+func (q Queue) getLast() (pl GitPL) {
+	// run and change element by mathcing ID
+	return q.list[len(q.list)-1]
+}
 
 var queue Queue
 
@@ -142,14 +169,12 @@ func SetupCloseHandler() {
 		f.Println("\r- Ctrl+C pressed in Terminal")
 		// remove temp directory
 		os.RemoveAll("./tmp/")
-		f.Println("Exited")
 		os.Exit(0)
 	}()
 }
 
 // goCloneGitRepo - Clone GitHub Repo in tmp/ directory
 func goCloneGitRepo(tokenGit string, repo *github.Repository) {
-	f.Printf("\n\n%v\n\n", *repo.CloneURL)
 	cloneurl := *repo.CloneURL
 	gitCommand := cloneurl[:8] + tokenGit + "@" + cloneurl[8:]
 	cmd := exec.Command("git", "clone", gitCommand)
@@ -178,20 +203,18 @@ func goGitLogin(token string) (user *github.Client, contx context.Context) {
 }
 
 // goGitCheckout - checkout clonned repo to target branch
-func goGitCheckout(branch string, project string) {
+func goGitCheckout(PL GitPL) {
 
 	// move to git directory
-	os.Chdir("tmp/" + project)
-	f.Println("Moved in ", "tmp/"+project, "directory")
+	os.Chdir("tmp/" + PL.project)
 
 	// execute command to checkout on branch
-	cmd := exec.Command("git", "checkout", branch)
+	cmd := exec.Command("git", "checkout", PL.branch)
 	cmd.Run()
-	f.Println("Git: check out on branch", branch)
+	f.Println("Git: check out on branch", PL.branch)
 
 	// move back to work directory
 	os.Chdir("../../")
-	f.Println("Moved back to work directory")
 }
 
 // ?? goGetGitRepo - get github repo we need as variable
@@ -204,7 +227,6 @@ func goGetGitRepo(ctx context.Context, gitClient *github.Client, targetRepo stri
 	}
 	var repo github.Repository
 	for i := 0; i < len(repos); i++ {
-		f.Println(*repos[i].Name)
 		if *repos[i].Name == targetRepo {
 			repo = *repos[i]
 		}
@@ -212,22 +234,86 @@ func goGetGitRepo(ctx context.Context, gitClient *github.Client, targetRepo stri
 	return repo
 }
 
-func runPulumiPlan(PL GitPL) {
-	os.Chdir("tmp/" + PL.project)
+func commentOnReview(GL GitPL, message string) {
+	// TODO: comment on github
 }
 
-func commentOnReview() {
+func findCommandInComment(PL GitPL) {
+	if strings.Contains(PL.comment.body, "pullantis apply") {
+		f.Println("found pullantis apply in comment - running apply")
+		PL.command = "apply"
+		f.Printf("%v", PL)
+		queue.push(PL)
+		// TODO: run pulumi "apply"
+	} else if strings.Contains(PL.comment.body, "pullantis plan") {
+		f.Println("found pullantis apply in comment - running plan")
+		// TODO: run pulumi "plan"
+	}
+}
 
+func pulumiPlan(PL GitPL) {
+	os.Chdir("tmp/" + PL.project)
+
+	pulumi.Run(func(ctx *pulumi.Context) error {
+		return nil
+	})
+
+	os.Chdir("../../")
+
+}
+
+func pulumiApply(PL GitPL) {
+	os.Chdir("tmp/" + PL.project)
+
+	pulumi.Run(func(ctx *pulumi.Context) error {
+		return nil
+	})
+
+	os.Chdir("../../")
+
+}
+
+func scanPL(PL GitPL) {
+	goGitCheckout(PL)
+	if PL.command == "apply" {
+		pulumiApply(PL)
+	} else {
+		pulumiPlan(PL)
+	}
+
+}
+
+func runApplication(PL GitPL) {
+	// TODO: implement waiting system
+	// TODO: implement pulumi
+	// TODO: comment on github
+	if queue.list[0].running != true {
+		if queue.list[0].running != true {
+			queue.list[0].running = true
+			go scanPL(queue.list[0])
+		}
+	} else {
+		commentOnReview(PL, "Pullantis is Busy")
+	}
 }
 
 func handleQueue(PL GitPL) {
-	if queue.length == 0 {
-		goGitCheckout(PL.branch, PL.project)
-		runPulumiPlan(PL)
-		return
+	// queueing system
+
+	// if PL is created or pullantis is requested by comment, add element in queue.
+	// 	if PL is closed, remove associated Queue element
+	// run application after each receive to see if we can change anything
+	if PL.action == "open" {
+		f.Println("Received new PL - Adding to Queue")
+		queue.push(PL)
+	} else if PL.action == "created" {
+		f.Println("Received new comment - searching")
+		findCommandInComment(PL)
+	} else if PL.action == "closed" {
+		f.Println("Received PL close - removing from queue")
+		queue.removeByID(PL.ID)
 	}
-	f.Println("NOPE")
-	queue = queue.push(PL)
+	runApplication(PL)
 }
 
 // referrence - https://groob.io/tutorial/go-github-webhook/
@@ -247,14 +333,16 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var PL GitPL
-	PL.ID = webhookData["number"].(int)
+	PL.ID = int(webhookData["number"].(float64))
 	PL.action = webhookData["action"].(string)
-	PL.branch = webhookData["pull_request"].(map[string]interface{})["head"].(map[string]interface{})["ref"].(string)
 	PL.project = webhookData["pull_request"].(map[string]interface{})["head"].(map[string]interface{})["repo"].(map[string]interface{})["name"].(string)
 
+	if PL.action == "created" {
+		PL.comment = GitComment{webhookData["comment"].(map[string]interface{})["body"].(string)}
+	} else {
+		PL.branch = webhookData["pull_request"].(map[string]interface{})["head"].(map[string]interface{})["ref"].(string)
+	}
 	handleQueue(PL)
-
-	f.Printf("%v", PL)
 }
 
 func main() {
@@ -267,7 +355,7 @@ func main() {
 	var targetRepo = flag.String("repo", "pullantis", "GitHub repository name")
 	var userGit = flag.String("git-user", "levankhelo", "GitHub Token")
 	var tokenGit = flag.String("git-token", "", "GitHub Token")
-	var tokenPulumi = flag.String("pulumi-token", "", "Pulumi Token")
+	var tokenPulumi = flag.String("pulumi-token", "pul-6bc5c2d90a33078b307fd898d12683d70a26ca49", "Pulumi Token")
 	var webhookGit = flag.String("webhook", "/events", "GitHub webhook tag")
 	var localPort = flag.String("port", "4141", "local port for listener")
 	var noServer = flag.Bool("no-server", false, "allow server listener")
@@ -285,7 +373,6 @@ func main() {
 
 	// get target reository
 	repo := goGetGitRepo(ctx, gitClient, *targetRepo)
-	f.Printf("\n|%v\n\n\n", repo)
 	SetupCloseHandler()
 
 	os.Mkdir("tmp/", 0700)
@@ -303,3 +390,5 @@ func main() {
 	}
 
 }
+
+// clear; go build && go run main.go --git-user levankhelo --repo pullantis --webhook "/events" --port "4141"  --git-token 2868815ba4e32cb656ea9a8abd517a7b96ca2e2f --repo pullantis --pulumi-token "pul-6bc5c2d90a33078b307fd898d12683d70a26ca49"
