@@ -433,7 +433,7 @@ func pulumiPlan(PL GitPL) {
 	os.Chdir("tmp/" + PL.project)
 
 	// execute command and store output
-	cmd := exec.Command("pulumi", "preview", "-y")
+	cmd := exec.Command("pulumi", "preview", "--stack", "dev")
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -463,7 +463,7 @@ func pulumiApply(PL GitPL) {
 	os.Chdir("tmp/" + PL.project)
 
 	// execute command and store output
-	cmd := exec.Command("pulumi", "up", "-y")
+	cmd := exec.Command("pulumi", "up", "-y", "--stack", "dev")
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
