@@ -83,4 +83,9 @@ Trigger Pullantis:
 Notes:
 - if github repo we are looking at, does not support Pulumi (or does not have pullumi files), than you will always get `Pullantis failed` as PullRequest comment
 - Pulumi stack should be created on project, before executing pullantis on it
+- Pulumi project must have dev stack in it
+  
+Demo Video:
+[480p](https://levankhelo.com/videos/demo-pullantis-480p.mp4)
+[720p](https://levankhelo.com/videos/demo-pullantis-720p.mp4)
   
