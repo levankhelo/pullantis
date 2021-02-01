@@ -433,7 +433,7 @@ func pulumiPlan(PL GitPL) {
 	os.Chdir("tmp/" + PL.project)
 
 	// execute command and store output
-	cmd := exec.Command("pulumi", "refresh", "-y")
+	cmd := exec.Command("pulumi", "preview", "-y")
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
