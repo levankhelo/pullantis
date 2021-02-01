@@ -54,7 +54,28 @@ Create [https://docs.github.com/en/github/authenticating-to-github/creating-a-pe
  > Now we have `pulumi_token`
 
 
-
 <hr> 
 <br> 
 <br> 
+
+## using application 
+to start application run:
+```
+go build 
+go run main.go --git-user <GitHubUsername> --repo <GitHubRepoName> --webhook "/myHook" --port "<myPort>"  --git-token <git access token> --pulumi-token "<pulumi token>"
+```
+Arguments:
+- **--git-user**: *(string)* your git username. example: `--git-user levankhelo`
+- **--repo**: *(string)* your git repository with Pulumi.yaml in it. example: `--repo test-repo`
+- **--webhook**: *(string)* webhook you created on github project. example: `--webhook "/events"`
+- **--port**: *(string)/(int)* ngrok port. example: `--port "4141"`
+- **--git-token**: *(string)* your git access token with permissions. example: `--git-token asdjhasbd*******asdasd`
+- **--pulumi-token**: *(string)*you pulumi access token. example: `--pulumi-token ad-3adsasd****dasd`
+
+Trigger Pullantis:
+- create new Pull Request
+- comment `pullantis plan` to execute planning
+- comment `pullantis apply` to apply changes
+  > queueing system will allow only 1 Pull Request to be monitored.  
+  >  so you can only run pullantis (including commenting `plan` and `apply`) only on 1 Pull Request  
+  >  if you will finish reviewing (`close` or `merge`) Pullantis move on next Queue element. example: if i had `PL-1` running and i had to scan it 10 times with pullantis plan, and at the same time, someone created `PL-2`, pullantis will tell `PL-2` that it is busy and will get to it when `PL-1` is merged/closed
