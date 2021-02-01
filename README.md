@@ -79,3 +79,7 @@ Trigger Pullantis:
   > queueing system will allow only 1 Pull Request to be monitored.  
   >  so you can only run pullantis (including commenting `plan` and `apply`) only on 1 Pull Request  
   >  if you will finish reviewing (`close` or `merge`) Pullantis move on next Queue element. example: if i had `PL-1` running and i had to scan it 10 times with pullantis plan, and at the same time, someone created `PL-2`, pullantis will tell `PL-2` that it is busy and will get to it when `PL-1` is merged/closed
+
+Notes:
+- if github repo we are looking at, does not support Pulumi (or does not have pullumi files), than you will always get `Pullantis failed` as PullRequest comment
+  
