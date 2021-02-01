@@ -82,4 +82,5 @@ Trigger Pullantis:
 
 Notes:
 - if github repo we are looking at, does not support Pulumi (or does not have pullumi files), than you will always get `Pullantis failed` as PullRequest comment
+- Pulumi stack should be created on project, before executing pullantis on it
   
