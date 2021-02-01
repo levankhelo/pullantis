@@ -388,9 +388,9 @@ func findCommandInComment(PL GitPL) {
 			PL: (GitPL) Pull Request Structure that carries GitHub's parsed json
 	*/
 
-	if strings.Contains(PL.comment.body, "Pullantis:") {
+	if strings.Contains(PL.comment.body, "Pullantis:") == true {
 
-	} else if strings.Contains(PL.comment.body, "pullantis apply") { // NOT WOKRING???? "pullantis apply" does not contain "pullantis apply"
+	} else if strings.Contains(PL.comment.body, "pullantis apply") || strings.Contains(PL.comment.body, "pullantis pply") {
 		// check if string contains pullantis apply
 
 		f.Println(" |  |---- found pullantis apply in comments: running apply")
@@ -420,7 +420,6 @@ func findCommandInComment(PL GitPL) {
 		}
 	} else {
 		f.Println("|   |---- Pullantis command not found in string")
-		f.Printf("\ncomment body: %v\n\n", PL.comment.body)
 	}
 }
 
