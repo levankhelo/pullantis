@@ -19,8 +19,6 @@
 		run pullantis
 		comment results on PL review
 
-
-
 */
 
 package main
@@ -360,8 +358,15 @@ func commentOnReview(PL GitPL, message string) {
 			message: (string) message that should be send to GitHub api (written as comment)
 	*/
 
+	// PLopt := &github.PullRequestListCommentsOptions{}
+	// arr, resp, err := gitClient.PullRequests.ListComments(context.Background(), gituser.username, gituser.repo, 0, PLopt)
+	// f.PrintF("\n\nComments: %v",arr)
+	// f.PrintF("\n\nresp: %v",resp)
+	// f.PrintF("\n\nerr: %v\n\n",err)
+
 	// store message in byte arrat and POST it to PL's address
-	var jsonStr = []byte(`{"body":"` + message + `"}`)
+	var jsonStr = []byte(`{"body":"` + message[:len(message)-2] + `"}`)
+	f.Printf("SENDING as comment: %s", jsonStr)
 	req, err := http.NewRequest("POST", PL.comment.link, bytes.NewBuffer(jsonStr))
 	req.Header.Set("Authorization", "token "+PL.user.token)
 	req.Header.Set("Content-Type", "application/json")
@@ -437,15 +442,19 @@ func pulumiPlan(PL GitPL) {
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &out
 
 	err := cmd.Run()
 
+	f.Printf("\n\nOUTPUT: %v\n\n", out.String())
+	commentOnReview(PL, out.String())
+
 	// post command output on github as PL comment
 	if err != nil {
-		commentOnReview(PL, "Pullantis: Something went wrong during planning")
-		return
+		// commentOnReview(PL, "Pullantis: Something went wrong during planning")
+		// return
 	}
-	commentOnReview(PL, "Pullantis: Pulumi refresh successfuly executed")
+	// commentOnReview(PL, "Pullantis: Pulumi refresh successfuly executed")
 
 	f.Printf("\n\nPulumi Plan: %v", out.String())
 	f.Println("Pulumi apply executed")
@@ -467,15 +476,20 @@ func pulumiApply(PL GitPL) {
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &out
 
 	err := cmd.Run()
 
+	f.Printf("\n\nOUTPUT: %v\n\n", out.String())
+
+	commentOnReview(PL, out.String())
 	// post command output on github as PL comment
 	if err != nil {
-		commentOnReview(PL, "Pullantis: Something went wrong during apply")
-		return
+		// commentOnReview(PL, "Pullantis: Something went wrong during apply")
+
+		// return
 	}
-	commentOnReview(PL, "Pullantis: Pulumi up Successfully executed")
+	// commentOnReview(PL, "Pullantis: Pulumi up Successfully executed")
 
 	f.Printf("\n\nPulumi up: %v", out.String())
 	f.Println("Pulumi apply executed")
